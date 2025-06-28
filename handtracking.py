@@ -1,7 +1,6 @@
 import cv2 
 import numpy
 import mediapipe as mp
-import pyautogui
 
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands()
