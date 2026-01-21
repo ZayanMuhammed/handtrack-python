@@ -3,11 +3,14 @@ import mediapipe as mp
 import pyautogui
 import math
 import time
+import ctypes
+
+
+screen_w, screen_h = pyautogui.size()
 
 # Setup
 hands = mp.solutions.hands.Hands(max_num_hands=1, min_detection_confidence=0.7)
 mp_drawing = mp.solutions.drawing_utils
-screen_w, screen_h = pyautogui.size()
 
 cap = cv2.VideoCapture(0)
 cv2.namedWindow("Hand Mouse", cv2.WINDOW_NORMAL)
@@ -15,12 +18,13 @@ cv2.resizeWindow("Hand Mouse", 1280, 720)
 
 # Cursor smoothing
 x, y = screen_w // 2, screen_h // 2
-smooth_factor = 0.33
+smooth_factor = 0.2
 
-# Click detection
+# Click & drag detection
 pinching = False
+dragging = False
 last_click_time = 0
-double_click_window = 0.5  # max time between clicks for double-click
+double_click_window = 0.5  # seconds
 
 while True:
     ret, frame = cap.read()
@@ -34,29 +38,33 @@ while True:
         hand = results.multi_hand_landmarks[0]
         mp_drawing.draw_landmarks(frame, hand, mp.solutions.hands.HAND_CONNECTIONS)
 
-        # Finger tips
-        ix, iy = hand.landmark[8].x * screen_w, hand.landmark[8].y * screen_h
-        tx, ty = hand.landmark[4].x * screen_w, hand.landmark[4].y * screen_h
+        ix = hand.landmark[8].x * screen_w
+        iy = hand.landmark[8].y * screen_h
+        tx = hand.landmark[4].x * screen_w
+        ty = hand.landmark[4].y * screen_h
 
-        # Smooth cursor
+        ix = min(max(0, ix), screen_w-1)
+        iy = min(max(0, iy), screen_h-1)
+
         x += (ix - x) * smooth_factor
         y += (iy - y) * smooth_factor
         pyautogui.moveTo(int(x), int(y))
 
-        # Detect pinch
         distance = math.hypot(ix - tx, iy - ty)
         if distance < 40:
             if not pinching:
-                # Determine single or double click
                 if time.time() - last_click_time < double_click_window:
-                    pyautogui.doubleClick()  # double click
+                    pyautogui.doubleClick()
                 else:
-                    pyautogui.click()       # single click
+                    pyautogui.click()
                 last_click_time = time.time()
                 pinching = True
-            else:
-                pyautogui.drag()
+                dragging = True
+                pyautogui.mouseDown()  
         else:
+            if dragging:
+                pyautogui.mouseUp()  
+                dragging = False
             pinching = False
 
     cv2.imshow("Hand Mouse", frame)
