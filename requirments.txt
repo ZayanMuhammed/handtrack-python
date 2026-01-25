@@ -1,2 +1,4 @@
-mediapipe
+
 opencv
+protobuf==3.20.3
+mediapipe==0.10.9
