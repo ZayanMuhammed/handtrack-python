@@ -4,11 +4,9 @@ import pyautogui
 import math
 import time
 
-
 pyautogui.FAILSAFE = False
 
 screen_w, screen_h = pyautogui.size()
-
 
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
@@ -32,9 +30,13 @@ smooth_factor = 0.15
 pinching = False
 dragging = False
 last_click_time = 0
-double_click_window = 0.5  # seconds
+double_click_window = 0.5
 
 keyboard_cooldown = 0
+
+# 🔹 Scroll state (NEW)
+last_scroll_y = None
+scroll_cooldown = 0
 
 while True:
     ret, frame = cap.read()
@@ -49,10 +51,13 @@ while True:
         hand = results.multi_hand_landmarks[0]
         mp_drawing.draw_landmarks(frame, hand, mp_hands.HAND_CONNECTIONS)
 
-
         ix, iy = hand.landmark[8].x * screen_w, hand.landmark[8].y * screen_h
         tx, ty = hand.landmark[4].x * screen_w, hand.landmark[4].y * screen_h
         mx, my = hand.landmark[12].x * screen_w, hand.landmark[12].y * screen_h
+
+        # 🔹 Fist landmarks (NEW)
+        ry = hand.landmark[16].y * screen_h
+        py = hand.landmark[20].y * screen_h
 
         ix = max(0, min(screen_w - 1, ix))
         iy = max(0, min(screen_h - 1, iy))
@@ -62,16 +67,30 @@ while True:
         y += (iy - y) * smooth_factor
         pyautogui.moveTo(int(x), int(y), duration=0)
 
-
         distance_index = math.hypot(ix - tx, iy - ty)
         distance_middle = math.hypot(ix - mx, iy - my)
 
-
+        # Win + H
         if distance_middle < 40 and time.time() - keyboard_cooldown > 1:
             pyautogui.hotkey("win", "h")
             keyboard_cooldown = time.time()
 
+        # 🔹 Fist closed scroll (NEW)
+        fist_closed = max(iy, my, ry, py) - min(iy, my, ry, py) < 25
 
+        if fist_closed:
+            if last_scroll_y and time.time() - scroll_cooldown > 0.15:
+                if iy < last_scroll_y - 10:
+                    pyautogui.scroll(100)      # scroll up
+                    scroll_cooldown = time.time()
+                elif iy > last_scroll_y + 10:
+                    pyautogui.scroll(-100)     # scroll down
+                    scroll_cooldown = time.time()
+            last_scroll_y = iy
+        else:
+            last_scroll_y = None
+
+        # Click & drag
         if distance_index < 40:
             if not pinching:
                 if time.time() - last_click_time < double_click_window:
