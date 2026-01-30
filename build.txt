@@ -1,0 +1,1 @@
+pyinstaller main.py --collect-all mediapipe --hidden-import=mediapipe --hidden-import=mediapipe.python --hidden-import=mediapipe.python.solutions --onefile --noconsole --icon=app.ico

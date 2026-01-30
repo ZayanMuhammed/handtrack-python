@@ -3,6 +3,11 @@ import mediapipe as mp
 import pyautogui
 import math
 import time
+import ctypes
+
+user32 = ctypes.windll.user32
+screen_width = user32.GetSystemMetrics(0) # Screen width.
+screen_height = user32.GetSystemMetrics(1) # Screen height.
 
 pyautogui.FAILSAFE = False
 
@@ -19,8 +24,8 @@ hands = mp_hands.Hands(
 )
 
 cap = cv2.VideoCapture(0)
-cv2.namedWindow("Hand Mouse", cv2.WINDOW_NORMAL)
-cv2.resizeWindow("Hand Mouse", 1280, 720)
+cv2.namedWindow("Air Mouse", cv2.WINDOW_NORMAL)
+cv2.resizeWindow("Air Mouse", screen_width, screen_height)
 
 # Cursor smoothing
 x, y = screen_w // 2, screen_h // 2
@@ -34,7 +39,6 @@ double_click_window = 0.5
 
 keyboard_cooldown = 0
 
-# 🔹 Scroll state (NEW)
 last_scroll_y = None
 scroll_cooldown = 0
 
@@ -55,7 +59,7 @@ while True:
         tx, ty = hand.landmark[4].x * screen_w, hand.landmark[4].y * screen_h
         mx, my = hand.landmark[12].x * screen_w, hand.landmark[12].y * screen_h
 
-        # 🔹 Fist landmarks (NEW)
+
         ry = hand.landmark[16].y * screen_h
         py = hand.landmark[20].y * screen_h
 
@@ -75,7 +79,6 @@ while True:
             pyautogui.hotkey("win", "h")
             keyboard_cooldown = time.time()
 
-        # 🔹 Fist closed scroll (NEW)
         fist_closed = max(iy, my, ry, py) - min(iy, my, ry, py) < 25
 
         if fist_closed:
@@ -107,7 +110,7 @@ while True:
             dragging = False
             pinching = False
 
-    cv2.imshow("Hand Mouse", frame)
+    cv2.imshow("Air Mouse", frame)
     if cv2.waitKey(1) & 0xFF == 27:
         break
 
