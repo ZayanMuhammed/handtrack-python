@@ -1,9 +1,87 @@
+from tkinter import messagebox
 import cv2
 import mediapipe as mp
 import pyautogui
 import math
 import time
 import ctypes
+import tkinter as tk
+from tkinter import ttk
+
+camera_Number = 0  # Default camera
+
+root = tk.Tk()
+root.title("Camera Selection")
+root.geometry("350x200")
+root.configure(bg="#1e1e1e")
+
+style = ttk.Style()
+style.theme_use("clam")
+
+style.configure(
+    "Cool.TCombobox",
+    fieldbackground="#2b2b2b",
+    background="#2b2b2b",
+    foreground="white",
+    arrowcolor="white",
+    borderwidth=0,
+    padding=6
+)
+
+style.map(
+    "Cool.TCombobox",
+    fieldbackground=[("readonly", "#2b2b2b")],
+    foreground=[("readonly", "white")],
+    background=[("readonly", "#2b2b2b")]
+)
+
+# Label
+label = tk.Label(
+    root,
+    text="Select Camera",
+    bg="#1e1e1e",
+    fg="white",
+    font=("Segoe UI", 12)
+)
+label.pack(pady=15)
+
+# Dropdown values
+options = ["0", "1", "2", "3"]
+
+selected = tk.StringVar()
+selected.set(options[0])
+
+# Dropdown (Combobox)
+dropdown = ttk.Combobox(
+    root,
+    textvariable=selected,
+    values=options,
+    state="readonly",
+    style="Cool.TCombobox",
+    font=("Segoe UI", 11)
+)
+dropdown.pack(pady=10)
+
+def show_selection():
+    global camera_Number
+    print("Selected:", selected.get())
+    camera_Number = int(selected.get())
+    root.destroy()
+
+btn = tk.Button(
+    root,
+    text="Confirm",
+    command=show_selection,
+    bg="#414449",
+    fg="white",
+    font=("Segoe UI", 10),
+    relief="flat",
+    padx=15,
+    pady=6
+)
+btn.pack(pady=20)
+
+root.mainloop()
 
 user32 = ctypes.windll.user32
 screen_width = user32.GetSystemMetrics(0) # Screen width.
@@ -19,17 +97,18 @@ mp_drawing = mp.solutions.drawing_utils
 hands = mp_hands.Hands(
     static_image_mode=False,
     max_num_hands=1,
+    model_complexity=0, 
     min_detection_confidence=0.7,
     min_tracking_confidence=0.7
 )
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(camera_Number)
 cv2.namedWindow("Air Mouse", cv2.WINDOW_NORMAL)
 cv2.resizeWindow("Air Mouse", screen_width, screen_height)
 
 # Cursor smoothing
 x, y = screen_w // 2, screen_h // 2
-smooth_factor = 0.15
+smooth_factor = 0.15 
 
 # Click & drag state
 pinching = False
@@ -45,6 +124,13 @@ scroll_cooldown = 0
 while True:
     ret, frame = cap.read()
     if not ret:
+        ctypes.windll.user32.MessageBoxW(
+            0,
+            "Failed to access the webcam.",
+            "Error",
+            0x10
+        )
+        
         break
 
     frame = cv2.flip(frame, 1)
